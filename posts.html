@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Posts | MySocial</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        /* Include your CSS styles here */
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <!-- Sidebar content -->
+    </div>
+
+    <!-- Top Navigation -->
+    <div class="top-nav">
+        <!-- Navigation content -->
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <h1>Posts</h1>
+        <p>Share your thoughts or browse posts from others.</p>
+
+        <!-- Post creation form -->
+        <div class="post-form">
+            <textarea id="post-content" placeholder="What's on your mind?" rows="3"></textarea>
+            <select id="post-visibility">
+                <option value="public">Public</option>
+                <option value="friends">Friends</option>
+                <option value="private">Private</option>
+            </select>
+            <button id="post-submit">Post</button>
+        </div>
+
+        <!-- Posts feed -->
+        <div id="posts-feed"></div>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            // Fetch posts
+            function fetchPosts() {
+                $.get('posts.php', { action: 'fetch_posts' }, function (data) {
+                    let posts = JSON.parse(data);
+                    let postsHtml = '';
+
+                    posts.forEach(post => {
+                        postsHtml += `
+                            <div class="post-card">
+                                <div class="post-header">
+                                    <div class="post-avatar">${post.full_name.charAt(0)}</div>
+                                    <div class="post-user-info">
+                                        <h4>${post.full_name} <span>@${post.username}</span></h4>
+                                        <span>${post.created_at}</span>
+                                    </div>
+                                </div>
+                                <div class="post-content">${post.content}</div>
+                                <div class="post-footer">
+                                    <button class="like-btn" data-post-id="${post.post_id}">
+                                        ${post.user_liked ? 'Unlike' : 'Like'} (${post.like_count})
+                                    </button>
+                                    <button class="comment-btn" data-post-id="${post.post_id}">Comment (${post.comment_count})</button>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    $('#posts-feed').html(postsHtml);
+                });
+            }
+
+            // Create post
+            $('#post-submit').click(function () {
+                let content = $('#post-content').val();
+                let visibility = $('#post-visibility').val();
+
+                $.post('posts.php', { action: 'create_post', content, visibility }, function (response) {
+                    let res = JSON.parse(response);
+                    if (res.status === 'success') {
+                        $('#post-content').val('');
+                        fetchPosts();
+                    } else {
+                        alert(res.message);
+                    }
+                });
+            });
+
+            // Like post
+            $(document).on('click', '.like-btn', function () {
+                let postId = $(this).data('post-id');
+
+                $.post('posts.php', { action: 'like_post', post_id: postId }, function (response) {
+                    let res = JSON.parse(response);
+                    if (res.status === 'success') {
+                        fetchPosts();
+                    } else {
+                        alert(res.message);
+                    }
+                });
+            });
+
+            // Load posts initially
+            fetchPosts();
+        });
+    </script>
+</body>
+</html>
